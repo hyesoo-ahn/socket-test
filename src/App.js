@@ -4,6 +4,7 @@ import { priceFomat } from "./method";
 const SocketTest = () => {
   const [socketConnected, setSocketConnected] = useState(false);
   const [sendMsg, setSendMsg] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [dataF, setDataF] = useState({
     BTC_KRW: {
       buyVolume: "",
@@ -66,14 +67,14 @@ const SocketTest = () => {
         const data = await JSON.parse(evt.data);
         console.log(data.content.symbol);
 
-        setTimeout(() => {
-          setDataF((prev) => {
-            return {
-              ...prev,
-              [data.content.symbol]: data.content,
-            };
-          });
-        }, 1000);
+        setDataF((prev) => {
+          return {
+            ...prev,
+            [data.content.symbol]: data.content,
+          };
+        });
+
+        setLoading(false);
       };
     }
 
@@ -95,7 +96,7 @@ const SocketTest = () => {
         })
       );
 
-      setSendMsg(true);
+      setSendMsg(false);
     }
   }, [socketConnected]);
 
@@ -103,7 +104,11 @@ const SocketTest = () => {
     <div>
       <div style={{ width: 500, padding: 10 }}>
         <div
-          style={{ border: "1px solid #ececec", display: "flex", justifyContent: "space-between" }}
+          style={{
+            border: "1px solid #ececec",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
         >
           <div style={{ flex: 1, textAlign: "center" }}>
             <p>심볼</p>
@@ -118,56 +123,74 @@ const SocketTest = () => {
             <p>누적거래량</p>
           </div>
         </div>
+        {!loading && (
+          <>
+            <div
+              style={{
+                marginTop: 5,
+                border: "1px solid #ececec",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                fontSize: 13,
+              }}
+            >
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p style={{ fontWeight: "bold" }}>BTC_KRW</p>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p>{priceFomat(dataF["BTC_KRW"].closePrice)}</p>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p>{priceFomat(dataF["BTC_KRW"].chgAmt)}</p>
+                <p>{dataF["BTC_KRW"].chgRate}%</p>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p>{priceFomat(dataF["BTC_KRW"].volume)}(백만)</p>
+              </div>
+            </div>
 
-        <div
-          style={{
-            marginTop: 5,
-            border: "1px solid #ececec",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            fontSize: 13,
-          }}
-        >
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p style={{ fontWeight: "bold" }}>BTC_KRW</p>
-          </div>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p>{priceFomat(dataF["BTC_KRW"].closePrice)}</p>
-          </div>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p>{priceFomat(dataF["BTC_KRW"].chgAmt)}</p>
-            <p>{dataF["BTC_KRW"].chgRate}%</p>
-          </div>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p>{priceFomat(dataF["BTC_KRW"].volume)}(백만)</p>
-          </div>
-        </div>
+            <div
+              style={{
+                marginTop: 5,
+                border: "1px solid #ececec",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: 13,
+              }}
+            >
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p style={{ fontWeight: "bold" }}>ETH_KRW</p>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p>{priceFomat(dataF["ETH_KRW"].closePrice)}</p>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p>{priceFomat(dataF["BTC_KRW"].chgAmt)}</p>
+                <p>{dataF["ETH_KRW"].chgRate}%</p>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <p>{priceFomat(dataF["ETH_KRW"].volume)}(백만)</p>
+              </div>
+            </div>
+          </>
+        )}
 
-        <div
-          style={{
-            marginTop: 5,
-            border: "1px solid #ececec",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontSize: 13,
-          }}
-        >
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p style={{ fontWeight: "bold" }}>ETH_KRW</p>
+        {loading && (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 50,
+            }}
+          >
+            <div className="spinner"></div>
           </div>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p>{priceFomat(dataF["ETH_KRW"].closePrice)}</p>
-          </div>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p>{priceFomat(dataF["BTC_KRW"].chgAmt)}</p>
-            <p>{dataF["ETH_KRW"].chgRate}%</p>
-          </div>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p>{priceFomat(dataF["ETH_KRW"].volume)}(백만)</p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
