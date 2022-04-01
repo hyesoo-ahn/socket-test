@@ -1,111 +1,176 @@
-import logo from "./logo.svg";
-import "./App.css";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { priceFomat } from "./method";
 
-function App() {
-  const [data, setData] = useState({
-    BTC_KRW: {},
-    ETH_KRW: {},
+const SocketTest = () => {
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [sendMsg, setSendMsg] = useState(false);
+  const [dataF, setDataF] = useState({
+    BTC_KRW: {
+      buyVolume: "",
+      chgAmt: "",
+      chgRate: "",
+      closePrice: "",
+      date: "",
+      highPrice: "",
+      lowPrice: "",
+      openPrice: "",
+      prevClosePrice: "",
+      sellVolume: "",
+      symbol: "",
+      tickType: "",
+      time: "",
+      value: "",
+      volume: "",
+      volumePower: "",
+    },
+    ETH_KRW: {
+      buyVolume: "",
+      chgAmt: "",
+      chgRate: "",
+      closePrice: "",
+      date: "",
+      highPrice: "",
+      lowPrice: "",
+      openPrice: "",
+      prevClosePrice: "",
+      sellVolume: "",
+      symbol: "",
+      tickType: "",
+      time: "",
+      value: "",
+      volume: "",
+      volumePower: "",
+    },
   });
+
+  const webSocketUrl = `wss://pubwss.bithumb.com/pub/ws`;
+  let ws = useRef(null);
+
+  // 소켓 객체 생성
   useEffect(() => {
-    connectWS();
+    if (!ws.current) {
+      ws.current = new WebSocket(webSocketUrl);
+      ws.current.onopen = () => {
+        console.log("connected to " + webSocketUrl);
+        setSocketConnected(true);
+      };
+      ws.current.onclose = (error) => {
+        console.log("disconnect from " + webSocketUrl);
+        console.log(error);
+      };
+      ws.current.onerror = (error) => {
+        console.log("connection error " + webSocketUrl);
+        console.log(error);
+      };
+      ws.current.onmessage = async (evt) => {
+        const data = await JSON.parse(evt.data);
+        console.log(data.content.symbol);
+
+        setTimeout(() => {
+          setDataF((prev) => {
+            return {
+              ...prev,
+              [data.content.symbol]: data.content,
+            };
+          });
+        }, 1000);
+      };
+    }
+
+    // return () => {
+    //   console.log("clean up");
+    //   ws.current.close();
+    // };
   }, []);
-  let socket;
 
-  // 웹소켓 연결
-  const connectWS = () => {
-    if (socket != undefined) {
-      socket.close();
+  // 소켓이 연결되었을 시에 send 메소드
+  useEffect(() => {
+    if (socketConnected) {
+      // 웹소켓 요청
+      ws.current.send(
+        JSON.stringify({
+          type: "ticker",
+          symbols: ["BTC_KRW", "ETH_KRW"],
+          tickTypes: ["30M", "1H", "12H", "24H", "MID"],
+        })
+      );
+
+      setSendMsg(true);
     }
-    console.log("connecting ...", "wss://pubwss.bithumb.com/pub/ws");
-
-    socket = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
-
-    socket.onopen = function (e) {
-      console.log("onopen...");
-    };
-
-    socket.onclose = function (e) {
-      console.log("onclose...");
-      socket = undefined;
-    };
-    socket.onmessage = function (e) {
-      const parsedData = JSON.parse(e.data);
-      let tempOb = { ...data };
-      tempOb[parsedData.content.symbol] = parsedData;
-
-      console.log(tempOb);
-      setData(tempOb);
-    };
-  };
-
-  // 웹소켓 연결 해제
-  function closeWS() {
-    if (socket != undefined) {
-      console.log("closing requested");
-      socket.close();
-      socket = undefined;
-    }
-  }
-
-  // 웹소켓 요청
-  function filterRequest(filter) {
-    if (socket == undefined) {
-      alert("no connect exists");
-      return;
-    }
-
-    socket.send(filter);
-  }
-
-  const test = async () => {
-    // connectWS();
-    filterRequest(
-      JSON.stringify({
-        type: "ticker",
-        symbols: ["BTC_KRW", "ETH_KRW"],
-        tickTypes: ["30M", "1H", "12H", "24H", "MID"],
-      })
-    );
-
-    // closeWS();
-  };
+  }, [socketConnected]);
 
   return (
-    <div
-      className="App"
-      style={{
-        // height: 200,
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <h1 style={{ cursor: "pointer" }} onClick={test}>
-        웹소켓 요청 Click
-      </h1>
-
-      <div
-        style={{
-          // display: "flex",
-          // justifyContent: "space-between",
-          // alignItems: "center",
-          width: "50%",
-        }}
-      >
-        <div style={{ width: "50%", border: "1px solid red" }}>
-          <h2>BTC_KRW</h2>
-          {JSON.stringify(data["BTC_KRW"])}
+    <div>
+      <div style={{ width: 500, padding: 10 }}>
+        <div
+          style={{ border: "1px solid #ececec", display: "flex", justifyContent: "space-between" }}
+        >
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>심볼</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>현재가</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>변동율</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>누적거래량</p>
+          </div>
         </div>
-        <div style={{ width: "50%", border: "1px solid red" }}>
-          <h2>ETH_KRW</h2>
-          {JSON.stringify(data["ETH_KRW"])}
+
+        <div
+          style={{
+            marginTop: 5,
+            border: "1px solid #ececec",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: 13,
+          }}
+        >
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p style={{ fontWeight: "bold" }}>BTC_KRW</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>{priceFomat(dataF["BTC_KRW"].closePrice)}</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>{priceFomat(dataF["BTC_KRW"].chgAmt)}</p>
+            <p>{dataF["BTC_KRW"].chgRate}%</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>{priceFomat(dataF["BTC_KRW"].volume)}(백만)</p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 5,
+            border: "1px solid #ececec",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 13,
+          }}
+        >
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p style={{ fontWeight: "bold" }}>ETH_KRW</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>{priceFomat(dataF["ETH_KRW"].closePrice)}</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>{priceFomat(dataF["BTC_KRW"].chgAmt)}</p>
+            <p>{dataF["ETH_KRW"].chgRate}%</p>
+          </div>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p>{priceFomat(dataF["ETH_KRW"].volume)}(백만)</p>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
-export default App;
+export default SocketTest;
